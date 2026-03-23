@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Share Your Contact Details</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      padding: 40px;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .header { text-align: center; margin-bottom: 32px; }
+
+    .icon {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 28px;
+    }
+
+    h1 { font-size: 24px; color: #1a1a2e; font-weight: 700; }
+
+    .org-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f0edff;
+      color: #6c47d4;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    .subtitle { color: #666; font-size: 14px; margin-top: 8px; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .field { margin-bottom: 18px; }
+    .field label {
+      display: block;
+      font-size: 13px; font-weight: 600; color: #444;
+      margin-bottom: 6px;
+    }
+    .field input, .field textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid #e8e8e8;
+      border-radius: 10px;
+      font-size: 15px;
+      color: #1a1a2e;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+      font-family: inherit;
+    }
+    .field input:focus, .field textarea:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+    }
+    .field textarea { resize: vertical; min-height: 80px; }
+
+    .required { color: #e53e3e; }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-top: 8px;
+    }
+    button[type="submit"]:hover { opacity: 0.9; }
+    button[type="submit"]:active { transform: scale(0.98); }
+    button[type="submit"]:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .alert {
+      padding: 14px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .alert.success { background: #e6fffa; color: #276749; border: 1px solid #9ae6b4; }
+    .alert.error   { background: #fff5f5; color: #c53030; border: 1px solid #fc8181; }
+    .alert.show { display: block; }
+
+    .success-screen { text-align: center; display: none; }
+    .success-screen.show { display: block; }
+    .success-icon {
+      width: 80px; height: 80px;
+      background: #e6fffa;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+      margin: 0 auto 20px;
+    }
+    .success-screen h2 { color: #276749; font-size: 22px; margin-bottom: 8px; }
+    .success-screen p  { color: #666; font-size: 15px; }
+
+    .not-configured {
+      text-align: center;
+      padding: 24px 0;
+      color: #999;
+      font-size: 14px;
+    }
+
+    @media (max-width: 480px) {
+      .card { padding: 28px 20px; }
+      .form-row { grid-template-columns: 1fr; gap: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+
+    <!-- Success screen -->
+    <div class="success-screen" id="successScreen">
+      <div class="success-icon">✓</div>
+      <h2>Details Saved!</h2>
+      <p>Your contact information has been added successfully.</p>
+      <p style="margin-top:16px; font-size:13px; color:#999;">You can close this page.</p>
+    </div>
+
+    <!-- Main form -->
+    <div id="formContent">
+      <div class="header">
+        <div class="icon">📋</div>
+        <h1>Share Your Details</h1>
+        <div id="orgBadge" class="org-badge" style="display:none">
+          <span>🏢</span>
+          <span id="orgName"></span>
+        </div>
+        <p class="subtitle" id="subtitle">Fill in your contact information below.</p>
+      </div>
+
+      <div class="alert" id="alertBox"></div>
+
+      <form id="contactForm" novalidate>
+        <div class="form-row">
+          <div class="field">
+            <label>First Name <span class="required">*</span></label>
+            <input type="text" name="firstName" placeholder="John" autocomplete="given-name" />
+          </div>
+          <div class="field">
+            <label>Last Name</label>
+            <input type="text" name="lastName" placeholder="Doe" autocomplete="family-name" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" name="email" placeholder="john@example.com" autocomplete="email" />
+        </div>
+
+        <div class="field">
+          <label>Phone Number</label>
+          <input type="tel" name="phone" placeholder="+1 (555) 000-0000" autocomplete="tel" />
+        </div>
+
+        <div class="field">
+          <label>Job Title / Role</label>
+          <input type="text" name="jobTitle" placeholder="Software Engineer" autocomplete="organization-title" />
+        </div>
+
+        <div class="field">
+          <label>Notes <span style="color:#999;font-weight:400">(optional)</span></label>
+          <textarea name="notes" placeholder="Anything you'd like to add..."></textarea>
+        </div>
+
+        <button type="submit" id="submitBtn">Submit Contact Details</button>
+      </form>
+    </div>
+
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    const form       = document.getElementById('contactForm');
+    const alertBox   = document.getElementById('alertBox');
+    const submitBtn  = document.getElementById('submitBtn');
+    const orgBadge   = document.getElementById('orgBadge');
+    const orgNameEl  = document.getElementById('orgName');
+    const subtitleEl = document.getElementById('subtitle');
+
+    // ── Load org/label display ──────────────────────────────────────────────
+
+    if (APPS_SCRIPT_URL && APPS_SCRIPT_URL !== 'PASTE_YOUR_APPS_SCRIPT_URL_HERE') {
+      fetch(APPS_SCRIPT_URL + '?action=getConfig', { redirect: 'follow' })
+        .then(r => r.json())
+        .then(cfg => {
+          if (cfg.organization) {
+            orgNameEl.textContent = cfg.organization;
+            orgBadge.style.display = 'inline-flex';
+            subtitleEl.textContent = `Your details will be saved under ${cfg.organization}.`;
+            if (cfg.label) subtitleEl.textContent += ` Group: ${cfg.label}.`;
+          }
+        })
+        .catch(() => {});
+    }
+
+    // ── Alert helper ────────────────────────────────────────────────────────
+
+    function showAlert(msg, type) {
+      alertBox.textContent = msg;
+      alertBox.className = 'alert ' + type + ' show';
+      alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // ── Submit ──────────────────────────────────────────────────────────────
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.className = 'alert';
+
+      if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PASTE_YOUR_APPS_SCRIPT_URL_HERE') {
+        showAlert('This form is not configured yet. Please ask the administrator to complete setup.', 'error');
+        return;
+      }
+
+      const data = Object.fromEntries(new FormData(form));
+
+      if (!data.firstName.trim() && !data.lastName.trim()) {
+        showAlert('Please enter at least your first name.', 'error');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
+
+      try {
+        const resp = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          // text/plain avoids CORS preflight — Apps Script parses the body via e.postData.contents
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'addContact', ...data }),
+          redirect: 'follow',
+        });
+
+        const result = await resp.json();
+
+        if (result.success) {
+          document.getElementById('formContent').style.display = 'none';
+          document.getElementById('successScreen').classList.add('show');
+        } else {
+          showAlert(result.error || 'Something went wrong. Please try again.', 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit Contact Details';
+        }
+      } catch (err) {
+        showAlert('Network error. Please check your connection and try again.', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Contact Details';
+      }
+    });
+  </script>
+</body>
+</html>
