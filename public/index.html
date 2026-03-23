@@ -399,6 +399,7 @@
       fetch(APPS_SCRIPT_URL, {
         method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'addContact', ...data }), redirect: 'follow',
+        keepalive: true,  // completes even if the page is closed immediately after submit
       }).catch(() => {}); // silent — contact saving is best-effort in background
     });
 
