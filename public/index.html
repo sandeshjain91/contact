@@ -371,7 +371,7 @@
     const toast = document.getElementById('toast');
     function showToast() {
       toast.classList.add('show');
-      setTimeout(() => { toast.classList.remove('show'); setTimeout(() => location.reload(), 350); }, 2200);
+      setTimeout(() => toast.classList.remove('show'), 2200);
     }
 
     // ── Alert ─────────────────────────────────────────────────────────────────
@@ -380,7 +380,7 @@
 
     // ── Submit ────────────────────────────────────────────────────────────────
     const submitBtn = document.getElementById('submitBtn');
-    form.addEventListener('submit', async e => {
+    form.addEventListener('submit', e => {
       e.preventDefault();
       alertBox.className = 'alert';
       if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PASTE_YOUR_APPS_SCRIPT_URL_HERE') {
@@ -390,16 +390,16 @@
       if (!data.firstName.trim() && !data.lastName.trim()) {
         showAlert('Please enter at least your first name.', 'error'); return;
       }
-      submitBtn.disabled = true; submitBtn.textContent = 'Saving...';
-      try {
-        const r = await fetch(APPS_SCRIPT_URL, {
-          method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'addContact', ...data }), redirect: 'follow',
-        });
-        const res = await r.json();
-        if (res.success) { showToast(); }
-        else { showAlert(res.error || 'Something went wrong.', 'error'); submitBtn.disabled = false; submitBtn.textContent = 'Submit Contact Details'; }
-      } catch { showAlert('Network error. Please try again.', 'error'); submitBtn.disabled = false; submitBtn.textContent = 'Submit Contact Details'; }
+
+      // Reset form immediately so the next person can start typing
+      form.reset();
+      showToast();
+
+      // Save to Google Contacts in the background
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'addContact', ...data }), redirect: 'follow',
+      }).catch(() => {}); // silent — contact saving is best-effort in background
     });
 
     // ── Settings drawer ───────────────────────────────────────────────────────
