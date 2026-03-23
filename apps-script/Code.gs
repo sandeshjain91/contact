@@ -22,6 +22,7 @@ function doGet(e) {
     return jsonResponse({
       organization: PROPS.getProperty('organization') || '',
       label:        PROPS.getProperty('label')        || '',
+      theme:        PROPS.getProperty('theme')        || 'purple',
     });
   }
 
@@ -52,6 +53,7 @@ function handleGetStatus(data) {
   return jsonResponse({
     organization: PROPS.getProperty('organization') || '',
     label:        PROPS.getProperty('label')        || '',
+    theme:        PROPS.getProperty('theme')        || 'purple',
   });
 }
 
@@ -65,6 +67,7 @@ function handleUpdateConfig(data) {
 
   PROPS.setProperty('organization', (data.organization || '').trim());
   PROPS.setProperty('label', newLabel);
+  PROPS.setProperty('theme', (data.theme || 'purple').trim());
 
   // Invalidate cached group resource name if label changed
   if (newLabel !== oldLabel) {
