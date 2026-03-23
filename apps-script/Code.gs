@@ -124,8 +124,8 @@ function handleAddContact(data) {
         const groupResourceName = getOrCreateGroup(label);
         if (groupResourceName) {
           People.ContactGroups.Members.modify(
-            groupResourceName,
-            { resourceNamesToAdd: [created.resourceName] }
+            { resourceNamesToAdd: [created.resourceName] },
+            groupResourceName
           );
         }
       } catch (groupErr) {
