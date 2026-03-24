@@ -113,9 +113,17 @@ function handleAddContact(data) {
   } else if (jobTitle && String(jobTitle).trim()) {
     contactBody.organizations = [{ title: String(jobTitle).trim(), type: 'work' }];
   }
-  if (notes && String(notes).trim()) {
-    contactBody.biographies = [{ value: String(notes).trim(), contentType: 'TEXT_PLAIN' }];
-  }
+  // Build note with timestamp prepended
+  const timestamp = Utilities.formatDate(
+    new Date(),
+    Session.getScriptTimeZone(),
+    'dd MMM yyyy, hh:mm a z'
+  );
+  const userNotes   = String(notes || '').trim();
+  const noteContent = userNotes
+    ? `Submitted: ${timestamp}\n\n${userNotes}`
+    : `Submitted: ${timestamp}`;
+  contactBody.biographies = [{ value: noteContent, contentType: 'TEXT_PLAIN' }];
 
   try {
     // Create contact via People API advanced service

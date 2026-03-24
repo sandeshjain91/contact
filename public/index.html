@@ -216,9 +216,6 @@
           <input type="password" id="s-passwordInput" placeholder="Enter password" />
         </div>
         <button class="s-btn s-btn-primary" id="s-loginBtn" onclick="settingsLogin()">Sign In</button>
-        <p style="margin-top:12px;font-size:11px;color:#444;text-align:center;">
-          Set in Apps Script → Script Properties → <code style="color:var(--t1)">ADMIN_PASSWORD</code>
-        </p>
       </div>
 
       <!-- Dashboard -->
@@ -278,7 +275,7 @@
         </div>
       </div>
       <div class="field">
-        <label>Phone Number</label>
+        <label>Phone Number <span class="required">*</span></label>
         <input type="tel" name="phone" placeholder="+91 98765 43210"
                autocomplete="tel" inputmode="tel" data-next="email" />
       </div>
@@ -389,6 +386,9 @@
       const data = Object.fromEntries(new FormData(form));
       if (!data.firstName.trim() && !data.lastName.trim()) {
         showAlert('Please enter at least your first name.', 'error'); return;
+      }
+      if (!data.phone.trim()) {
+        showAlert('Phone number is required.', 'error'); return;
       }
 
       // Reset form immediately so the next person can start typing
