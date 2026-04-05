@@ -121,29 +121,27 @@ function handleAddContact(data) {
   );
   const userNotes   = String(notes || '').trim();
   const noteContent = userNotes
-    ? `Submitted: ${timestamp}\n\n${userNotes}`
-    : `Submitted: ${timestamp}`;
+    ? `Submitted via contact form on: ${timestamp}\n\n${userNotes}`
+    : `Submitted via contact form on: ${timestamp}`;
   contactBody.biographies = [{ value: noteContent, contentType: 'TEXT_PLAIN' }];
 
-  try {
-    // Create contact via People API advanced service
-    const created = People.People.createContact(contactBody);
-
-    // Add to label/group if configured
-    if (label) {
-      try {
-        const groupResourceName = getOrCreateGroup(label);
-        if (groupResourceName) {
-          People.ContactGroups.Members.modify(
-            { resourceNamesToAdd: [created.resourceName] },
-            groupResourceName
-          );
-        }
-      } catch (groupErr) {
-        Logger.log('Group add failed (non-fatal): ' + groupErr.message);
+  // Include group membership in the contact payload at creation time
+  if (label) {
+    try {
+      const groupResourceName = getOrCreateGroup(label);
+      if (groupResourceName) {
+        contactBody.memberships = [{
+          contactGroupMembership: { contactGroupResourceName: groupResourceName }
+        }];
+        Logger.log('Adding to group: ' + groupResourceName);
       }
+    } catch (groupErr) {
+      Logger.log('Group lookup failed (non-fatal): ' + groupErr.message);
     }
+  }
 
+  try {
+    People.People.createContact(contactBody);
     return jsonResponse({ success: true, message: 'Contact saved!' });
   } catch (err) {
     Logger.log('Error creating contact: ' + err.message);
@@ -154,11 +152,19 @@ function handleAddContact(data) {
 // ── Contact group helper (with caching) ───────────────────────────────────────
 
 function getOrCreateGroup(groupName) {
-  // Return cached resource name if the label hasn't changed
+  // Return cached resource name if the label hasn't changed — but verify it still exists
   const cachedLabel        = PROPS.getProperty('cachedGroupLabel');
   const cachedResourceName = PROPS.getProperty('cachedGroupResourceName');
   if (cachedLabel === groupName && cachedResourceName) {
-    return cachedResourceName;
+    try {
+      People.ContactGroups.get(cachedResourceName);
+      return cachedResourceName; // still valid
+    } catch (_) {
+      // Stale cache — clear it and fall through to fresh lookup
+      Logger.log('Cached group not found, refreshing...');
+      PROPS.deleteProperty('cachedGroupLabel');
+      PROPS.deleteProperty('cachedGroupResourceName');
+    }
   }
 
   // Fetch all user-created contact groups
@@ -197,6 +203,30 @@ function getOrCreateGroup(groupName) {
   }
 
   return resourceName;
+}
+
+// ── Debug: run this manually from the editor to test group assignment ─────────
+
+function testLabelAssignment() {
+  const label = PROPS.getProperty('label');
+  Logger.log('Label from settings: ' + label);
+
+  // Clear stale cache
+  PROPS.deleteProperty('cachedGroupLabel');
+  PROPS.deleteProperty('cachedGroupResourceName');
+
+  const groupResourceName = getOrCreateGroup(label);
+  Logger.log('Group resourceName: ' + groupResourceName);
+
+  // Create test contact with group membership included at creation time
+  const contact = People.People.createContact({
+    names: [{ givenName: 'TEST', familyName: 'DELETE_ME' }],
+    memberships: [{
+      contactGroupMembership: { contactGroupResourceName: groupResourceName }
+    }]
+  });
+  Logger.log('Done — contact: ' + contact.resourceName);
+  Logger.log('Check Google Contacts for TEST DELETE_ME under label: ' + label);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
