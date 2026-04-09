@@ -40,8 +40,9 @@ function doPost(e) {
   switch (data.action) {
     case 'getStatus':    return handleGetStatus(data);
     case 'updateConfig': return handleUpdateConfig(data);
-    case 'addContact':   return handleAddContact(data);
-    default:             return jsonResponse({ error: 'Unknown action' });
+    case 'addContact':      return handleAddContact(data);
+    case 'addBulkContacts': return handleBulkContacts(data);
+    default:                return jsonResponse({ error: 'Unknown action' });
   }
 }
 
@@ -147,6 +148,64 @@ function handleAddContact(data) {
     Logger.log('Error creating contact: ' + err.message);
     return jsonResponse({ error: 'Failed to save contact. Please try again.' });
   }
+}
+
+// ── Bulk contact creation from CSV ───────────────────────────────────────────
+
+function handleBulkContacts(data) {
+  if (!checkPassword(data.password)) return jsonResponse({ error: 'Invalid password' });
+
+  const contacts = data.contacts || [];
+  if (!contacts.length) return jsonResponse({ saved: 0, failed: 0 });
+
+  const organization = PROPS.getProperty('organization') || '';
+  const label        = PROPS.getProperty('label')        || '';
+
+  const timestamp = Utilities.formatDate(
+    new Date(), Session.getScriptTimeZone(), 'dd MMM yyyy, hh:mm a z'
+  );
+  const noteContent = 'Imported via CSV on: ' + timestamp;
+
+  // Resolve group once for the whole batch
+  let groupResourceName = null;
+  if (label) {
+    try { groupResourceName = getOrCreateGroup(label); } catch (e) { Logger.log('Group lookup: ' + e.message); }
+  }
+
+  let saved = 0, failed = 0;
+
+  contacts.forEach(c => {
+    const nameParts = String(c.name || '').trim().split(/\s+/);
+    const firstName = nameParts[0] || '';
+    const lastName  = nameParts.slice(1).join(' ') || '';
+
+    if (!firstName && !lastName && !c.number) { failed++; return; }
+
+    const body = {
+      names: [{ givenName: firstName, familyName: lastName }],
+      biographies: [{ value: noteContent, contentType: 'TEXT_PLAIN' }],
+    };
+
+    if (c.number) body.phoneNumbers = [{ value: String(c.number).trim(), type: 'mobile' }];
+
+    if (organization) {
+      body.organizations = [{ name: organization, type: 'work' }];
+    }
+
+    if (groupResourceName) {
+      body.memberships = [{ contactGroupMembership: { contactGroupResourceName: groupResourceName } }];
+    }
+
+    try {
+      People.People.createContact(body);
+      saved++;
+    } catch (e) {
+      Logger.log('Bulk create failed for ' + c.name + ': ' + e.message);
+      failed++;
+    }
+  });
+
+  return jsonResponse({ saved, failed });
 }
 
 // ── Contact group helper (with caching) ───────────────────────────────────────

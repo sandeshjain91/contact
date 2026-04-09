@@ -186,6 +186,10 @@
     }
     .theme-label { text-align: center; font-size: 10px; color: #555; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+    /* ── CSV drop zone hover ───────────────────────────────────────────────── */
+    #csv-drop:hover { border-color: var(--t1); background: rgba(102,126,234,0.05); }
+    #csv-drop.drag-over { border-color: var(--t1); background: rgba(102,126,234,0.1); }
+
     /* ── Responsive ────────────────────────────────────────────────────────── */
     @media (max-width: 480px) {
       .card { padding: 18px 18px; }
@@ -242,6 +246,41 @@
         </div>
 
         <button class="s-btn s-btn-primary" id="s-saveBtn" onclick="saveSettings()">Save Settings</button>
+
+        <hr class="s-divider" />
+
+        <!-- CSV Upload -->
+        <div class="s-section">Import from CSV</div>
+        <p style="color:#555;font-size:12px;margin-bottom:12px;">CSV must have <strong style="color:#888">name</strong> and <strong style="color:#888">number</strong> columns. First row = header.</p>
+
+        <label id="csv-drop" style="
+          display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+          border:2px dashed #2a2a4a;border-radius:10px;padding:18px 12px;cursor:pointer;
+          transition:border-color 0.2s,background 0.2s;text-align:center;margin-bottom:12px;">
+          <span style="font-size:26px">📂</span>
+          <span style="color:#888;font-size:13px;font-weight:600">Tap to choose CSV file</span>
+          <span style="color:#555;font-size:11px" id="csv-filename">No file selected</span>
+          <input type="file" id="csv-file" accept=".csv,text/csv" style="display:none" onchange="csvFileChosen(this)" />
+        </label>
+
+        <div class="s-alert" id="csv-alert"></div>
+
+        <div id="csv-preview" style="display:none;margin-bottom:12px;">
+          <div style="background:#0f0f1a;border:1.5px solid #2a2a4a;border-radius:8px;padding:10px 13px;">
+            <div style="color:#68d391;font-size:13px;font-weight:600" id="csv-count"></div>
+            <div style="color:#555;font-size:11px;margin-top:3px" id="csv-sample"></div>
+          </div>
+        </div>
+
+        <button class="s-btn s-btn-primary" id="csv-importBtn" onclick="importCSV()" style="display:none">Import Contacts</button>
+
+        <div id="csv-progress" style="display:none;margin-top:12px;">
+          <div style="background:#0f0f1a;border-radius:8px;height:6px;overflow:hidden;margin-bottom:8px;">
+            <div id="csv-bar" style="height:100%;background:linear-gradient(90deg,var(--t1),var(--t2));width:0%;transition:width 0.3s;"></div>
+          </div>
+          <div style="color:#888;font-size:12px;text-align:center" id="csv-status"></div>
+        </div>
+
         <hr class="s-divider" />
         <button class="s-btn s-btn-ghost" onclick="settingsSignOut()">Sign Out</button>
       </div>
@@ -497,6 +536,104 @@
     }
 
     function showSAlert(id, msg, type) { const el = document.getElementById(id); el.textContent = msg; el.className = 's-alert ' + type + ' show'; }
+
+    // ── CSV Import ────────────────────────────────────────────────────────────
+    let csvContacts = [];
+
+    // Drag-and-drop on the drop zone
+    const csvDrop = document.getElementById('csv-drop');
+    csvDrop.addEventListener('dragover',  e => { e.preventDefault(); csvDrop.classList.add('drag-over'); });
+    csvDrop.addEventListener('dragleave', () => csvDrop.classList.remove('drag-over'));
+    csvDrop.addEventListener('drop', e => {
+      e.preventDefault(); csvDrop.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) parseCSVFile(file);
+    });
+
+    function csvFileChosen(input) {
+      if (input.files[0]) parseCSVFile(input.files[0]);
+    }
+
+    function parseCSVFile(file) {
+      document.getElementById('csv-filename').textContent = file.name;
+      document.getElementById('csv-preview').style.display  = 'none';
+      document.getElementById('csv-importBtn').style.display = 'none';
+      document.getElementById('csv-progress').style.display  = 'none';
+      showSAlert('csv-alert', '', '');
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        const lines = e.target.result.split(/\r?\n/).filter(l => l.trim());
+        if (lines.length < 2) { showSAlert('csv-alert', 'CSV is empty or has no data rows.', 'error'); return; }
+
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+        const nameIdx = headers.findIndex(h => h === 'name');
+        const numIdx  = headers.findIndex(h => h === 'number' || h === 'phone');
+
+        if (nameIdx === -1) { showSAlert('csv-alert', 'No "name" column found in CSV header.', 'error'); return; }
+        if (numIdx  === -1) { showSAlert('csv-alert', 'No "number" or "phone" column found in CSV header.', 'error'); return; }
+
+        csvContacts = [];
+        for (let i = 1; i < lines.length; i++) {
+          // Handle quoted fields
+          const cols = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || lines[i].split(',');
+          const name = (cols[nameIdx] || '').replace(/^"|"$/g, '').trim();
+          const num  = (cols[numIdx]  || '').replace(/^"|"$/g, '').trim();
+          if (name || num) csvContacts.push({ name, number: num });
+        }
+
+        if (csvContacts.length === 0) { showSAlert('csv-alert', 'No valid rows found in CSV.', 'error'); return; }
+
+        // Show preview
+        document.getElementById('csv-count').textContent  = `${csvContacts.length} contact${csvContacts.length > 1 ? 's' : ''} found`;
+        const sample = csvContacts.slice(0, 3).map(c => `${c.name} · ${c.number}`).join('   •   ');
+        document.getElementById('csv-sample').textContent = sample + (csvContacts.length > 3 ? ` +${csvContacts.length - 3} more` : '');
+        document.getElementById('csv-preview').style.display   = 'block';
+        document.getElementById('csv-importBtn').style.display = 'block';
+      };
+      reader.readAsText(file);
+    }
+
+    async function importCSV() {
+      if (!csvContacts.length) return;
+
+      const btn = document.getElementById('csv-importBtn');
+      btn.disabled = true; btn.textContent = 'Importing...';
+      document.getElementById('csv-progress').style.display = 'block';
+      document.getElementById('csv-alert').className = 's-alert';
+
+      const total = csvContacts.length;
+      let done = 0, failed = 0;
+
+      // Send in batches of 10 to avoid timeout
+      const BATCH = 10;
+      for (let i = 0; i < total; i += BATCH) {
+        const batch = csvContacts.slice(i, i + BATCH);
+        try {
+          const resp = await appsPost({
+            action: 'addBulkContacts',
+            password: adminPassword,
+            contacts: batch,
+          });
+          done   += resp.saved  || 0;
+          failed += resp.failed || 0;
+        } catch {
+          failed += batch.length;
+        }
+        const pct = Math.round(((i + batch.length) / total) * 100);
+        document.getElementById('csv-bar').style.width    = pct + '%';
+        document.getElementById('csv-status').textContent = `${Math.min(i + BATCH, total)} of ${total} processed…`;
+      }
+
+      document.getElementById('csv-status').textContent = `Done! ${done} saved, ${failed} failed.`;
+      showSAlert('csv-alert', `✓ Import complete: ${done} contacts added${failed ? `, ${failed} failed` : ''}.`, 'success');
+      btn.disabled = false; btn.textContent = 'Import Contacts';
+      csvContacts = [];
+      document.getElementById('csv-file').value = '';
+      document.getElementById('csv-filename').textContent = 'No file selected';
+      document.getElementById('csv-preview').style.display   = 'none';
+      document.getElementById('csv-importBtn').style.display = 'none';
+    }
   </script>
 </body>
 </html>
