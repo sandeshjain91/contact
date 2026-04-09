@@ -291,7 +291,8 @@
             <table style="width:100%;border-collapse:collapse;" id="csv-table">
               <thead>
                 <tr style="background:#0f0f1a;position:sticky;top:0;z-index:1;">
-                  <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;min-width:90px">Name</th>
+                  <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;min-width:90px">First Name</th>
+                  <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;min-width:80px">Last Name</th>
                   <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;min-width:90px">Number</th>
                   <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;min-width:80px">Company</th>
                   <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;min-width:80px">Job Title</th>
@@ -628,7 +629,7 @@
     function renderCSVEditor(contacts) {
       const tbody = document.getElementById('csv-tbody');
       tbody.innerHTML = '';
-      contacts.forEach((c, i) => tbody.appendChild(csvRow(c.name, c.number, c.company || '', c.jobTitle || '', i)));
+      contacts.forEach((c, i) => tbody.appendChild(csvRow(c.name, '', c.number, c.company || '', c.jobTitle || '', i)));
       updateCSVCount();
       document.getElementById('csv-editor').style.display    = 'block';
       document.getElementById('csv-importBtn').style.display = 'block';
@@ -636,15 +637,16 @@
       document.getElementById('csv-bar').style.width = '0%';
     }
 
-    function csvRow(name, number, company, jobTitle, idx) {
+    function csvRow(firstName, lastName, number, company, jobTitle, idx) {
       const tr = document.createElement('tr');
       tr.className = 'csv-row';
       tr.dataset.idx = idx;
       tr.innerHTML = `
-        <td style="padding:0"><input class="csv-input" value="${escHtml(name)}"     placeholder="Name" /></td>
-        <td style="padding:0"><input class="csv-input" value="${escHtml(number)}"   placeholder="Number" /></td>
-        <td style="padding:0"><input class="csv-input" value="${escHtml(company)}"  placeholder="Company" /></td>
-        <td style="padding:0"><input class="csv-input" value="${escHtml(jobTitle)}" placeholder="Job title" /></td>
+        <td style="padding:0"><input class="csv-input" value="${escHtml(firstName)}" placeholder="First name" /></td>
+        <td style="padding:0"><input class="csv-input" value="${escHtml(lastName)}"  placeholder="Last name" /></td>
+        <td style="padding:0"><input class="csv-input" value="${escHtml(number)}"    placeholder="Number" /></td>
+        <td style="padding:0"><input class="csv-input" value="${escHtml(company)}"   placeholder="Company" /></td>
+        <td style="padding:0"><input class="csv-input" value="${escHtml(jobTitle)}"  placeholder="Job title" /></td>
         <td style="padding:0;text-align:center"><button class="csv-del" onclick="csvDelRow(this)" title="Delete">✕</button></td>`;
       return tr;
     }
@@ -652,7 +654,7 @@
     function csvAddRow() {
       const tbody = document.getElementById('csv-tbody');
       const idx   = tbody.rows.length;
-      tbody.appendChild(csvRow('', '', '', '', idx));
+      tbody.appendChild(csvRow('', '', '', '', '', idx));
       tbody.lastElementChild.querySelector('input').focus();
       updateCSVCount();
     }
@@ -675,12 +677,13 @@
       return Array.from(document.getElementById('csv-tbody').rows).map(tr => {
         const inputs = tr.querySelectorAll('input');
         return {
-          name:     inputs[0].value.trim(),
-          number:   inputs[1].value.trim(),
-          company:  inputs[2].value.trim(),
-          jobTitle: inputs[3].value.trim(),
+          firstName: inputs[0].value.trim(),
+          lastName:  inputs[1].value.trim(),
+          number:    inputs[2].value.trim(),
+          company:   inputs[3].value.trim(),
+          jobTitle:  inputs[4].value.trim(),
         };
-      }).filter(c => c.name || c.number);
+      }).filter(c => c.firstName || c.lastName || c.number);
     }
 
     function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
