@@ -190,7 +190,7 @@
     #csv-drop:hover { border-color: var(--t1); background: rgba(102,126,234,0.05); }
     #csv-drop.drag-over { border-color: var(--t1); background: rgba(102,126,234,0.1); }
 
-    /* ── CSV editable table ────────────────────────────────────────────────── */
+    /* ── CSV editable table (drawer mini) ─────────────────────────────────── */
     .csv-row { border-top: 1px solid #1e1e36; }
     .csv-row:hover { background: #0f0f1a; }
     .csv-input {
@@ -205,6 +205,73 @@
       transition: color 0.15s;
     }
     .csv-del:hover { color: #fc8181; }
+
+    /* ── CSV Review Modal ──────────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+      z-index: 500; display: flex; align-items: center; justify-content: center;
+      padding: 16px; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .modal-overlay.show { opacity: 1; pointer-events: all; }
+    .modal {
+      background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 16px;
+      width: 100%; max-width: 900px; max-height: 90vh;
+      display: flex; flex-direction: column;
+      transform: translateY(24px); transition: transform 0.25s;
+    }
+    .modal-overlay.show .modal { transform: translateY(0); }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 24px; border-bottom: 1px solid #2a2a4a; flex-shrink: 0;
+    }
+    .modal-title { color: #fff; font-size: 16px; font-weight: 700; }
+    .modal-subtitle { color: #555; font-size: 12px; margin-top: 2px; }
+    .modal-close {
+      background: none; border: none; color: #666; font-size: 24px;
+      cursor: pointer; line-height: 1; transition: color 0.2s; padding: 2px 6px;
+    }
+    .modal-close:hover { color: #fff; }
+    .modal-body { flex: 1; overflow-y: auto; }
+    .modal-footer {
+      padding: 14px 24px; border-top: 1px solid #2a2a4a; flex-shrink: 0;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .modal-count { color: #666; font-size: 13px; flex: 1; }
+    .modal-s-alert { padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 500; display: none; flex: 1; }
+    .modal-s-alert.success { background: #1a3a2a; color: #68d391; border: 1px solid #276749; display:block; }
+    .modal-s-alert.error   { background: #3a1a1a; color: #fc8181; border: 1px solid #822727; display:block; }
+
+    /* ── Modal table ───────────────────────────────────────────────────────── */
+    .mtable { width: 100%; border-collapse: collapse; }
+    .mtable thead th {
+      padding: 10px 12px; font-size: 11px; color: #555; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px; text-align: left;
+      background: #0f0f1a; position: sticky; top: 0; z-index: 1; white-space: nowrap;
+    }
+    .mtable tbody tr { border-top: 1px solid #1e1e36; }
+    .mtable tbody tr:hover { background: rgba(255,255,255,0.02); }
+    .mtable td { padding: 0; }
+    .minput {
+      width: 100%; background: transparent; border: none; outline: none;
+      color: #ddd; font-size: 14px; font-family: inherit; padding: 9px 12px; line-height: 1.4;
+    }
+    .minput:focus { background: #0f0f1a; }
+    .minput::placeholder { color: #2a2a4a; }
+    .mdel {
+      background: none; border: none; color: #2a2a4a; font-size: 16px;
+      cursor: pointer; padding: 6px 10px; line-height: 1; transition: color 0.15s;
+    }
+    .mdel:hover { color: #fc8181; }
+    .modal-add-row {
+      display: block; width: calc(100% - 32px); margin: 10px 16px;
+      background: none; border: 1.5px dashed #2a2a4a; color: #555;
+      border-radius: 8px; padding: 8px; font-size: 13px; cursor: pointer;
+      font-family: inherit; transition: border-color 0.2s, color 0.2s;
+    }
+    .modal-add-row:hover { border-color: var(--t1); color: var(--t1); }
+    .m-prog-wrap { background: #0f0f1a; border-radius: 6px; height: 5px; overflow: hidden; margin-bottom: 4px; min-width: 120px; }
+    .m-prog-bar { height: 100%; background: linear-gradient(90deg,var(--t1),var(--t2)); width: 0%; transition: width 0.3s; }
+    .m-prog-status { color: #555; font-size: 12px; }
 
     /* ── Responsive ────────────────────────────────────────────────────────── */
     @media (max-width: 480px) {
@@ -281,42 +348,62 @@
 
         <div class="s-alert" id="csv-alert"></div>
 
-        <!-- Editable contact table -->
-        <div id="csv-editor" style="display:none;margin-bottom:12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div id="csv-preview-info" style="display:none;margin-bottom:12px;">
+          <div style="background:#0f0f1a;border:1.5px solid #2a2a4a;border-radius:8px;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;">
             <span style="color:#68d391;font-size:13px;font-weight:600" id="csv-count"></span>
-            <button onclick="csvAddRow()" style="background:none;border:1.5px solid #2a2a4a;color:#888;border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;font-family:inherit;">+ Add row</button>
-          </div>
-          <div style="max-height:280px;overflow-y:auto;border:1.5px solid #2a2a4a;border-radius:10px;">
-            <table style="width:100%;border-collapse:collapse;" id="csv-table">
-              <thead>
-                <tr style="background:#0f0f1a;position:sticky;top:0;z-index:1;">
-                  <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;min-width:90px">First Name</th>
-                  <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;min-width:80px">Last Name</th>
-                  <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;min-width:90px">Number</th>
-                  <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;min-width:80px">Company</th>
-                  <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;min-width:80px">Job Title</th>
-                  <th style="width:28px;"></th>
-                </tr>
-              </thead>
-              <tbody id="csv-tbody"></tbody>
-            </table>
+            <span style="color:#555;font-size:12px" id="csv-sample"></span>
           </div>
         </div>
 
-        <button class="s-btn s-btn-primary" id="csv-importBtn" onclick="importCSV()" style="display:none">Import Contacts</button>
-
-        <div id="csv-progress" style="display:none;margin-top:12px;">
-          <div style="background:#0f0f1a;border-radius:8px;height:6px;overflow:hidden;margin-bottom:8px;">
-            <div id="csv-bar" style="height:100%;background:linear-gradient(90deg,var(--t1),var(--t2));width:0%;transition:width 0.3s;"></div>
-          </div>
-          <div style="color:#888;font-size:12px;text-align:center" id="csv-status"></div>
-        </div>
+        <button class="s-btn s-btn-primary" id="csv-importBtn" onclick="openCSVModal()" style="display:none">Review &amp; Import →</button>
 
         <hr class="s-divider" />
         <button class="s-btn s-btn-ghost" onclick="settingsSignOut()">Sign Out</button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- CSV Review Modal -->
+  <div class="modal-overlay" id="csvModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">📋 Review Contacts Before Importing</div>
+          <div class="modal-subtitle">Edit any field, delete rows, or add new ones — then click Import.</div>
+        </div>
+        <button class="modal-close" onclick="closeCSVModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <table class="mtable">
+          <thead>
+            <tr>
+              <th style="width:4%">#</th>
+              <th style="width:18%">First Name</th>
+              <th style="width:15%">Last Name</th>
+              <th style="width:16%">Number</th>
+              <th style="width:18%">Company</th>
+              <th style="width:16%">Job Title</th>
+              <th style="width:9%">Email</th>
+              <th style="width:4%"></th>
+            </tr>
+          </thead>
+          <tbody id="modal-tbody"></tbody>
+        </table>
+        <button class="modal-add-row" onclick="modalAddRow()">+ Add row</button>
+      </div>
+
+      <div class="modal-footer">
+        <div class="modal-count" id="modal-count"></div>
+        <div id="modal-progress" style="display:none; flex:1; min-width:160px;">
+          <div class="m-prog-wrap"><div class="m-prog-bar" id="m-prog-bar"></div></div>
+          <div class="m-prog-status" id="m-prog-status"></div>
+        </div>
+        <div class="modal-s-alert" id="modal-alert"></div>
+        <button class="s-btn s-btn-ghost" onclick="closeCSVModal()" style="width:auto;padding:10px 18px;margin:0">Cancel</button>
+        <button class="s-btn s-btn-primary" id="modal-importBtn" onclick="modalImport()" style="width:auto;padding:10px 22px;">Import Contacts</button>
+      </div>
     </div>
   </div>
 
@@ -570,26 +657,22 @@
     function showSAlert(id, msg, type) { const el = document.getElementById(id); el.textContent = msg; el.className = 's-alert ' + type + ' show'; }
 
     // ── CSV Import ────────────────────────────────────────────────────────────
+    let parsedContacts = []; // holds contacts after parsing, before modal opens
 
-    // Drag-and-drop on the drop zone
     const csvDrop = document.getElementById('csv-drop');
     csvDrop.addEventListener('dragover',  e => { e.preventDefault(); csvDrop.classList.add('drag-over'); });
     csvDrop.addEventListener('dragleave', () => csvDrop.classList.remove('drag-over'));
     csvDrop.addEventListener('drop', e => {
       e.preventDefault(); csvDrop.classList.remove('drag-over');
-      const file = e.dataTransfer.files[0];
-      if (file) parseCSVFile(file);
+      if (e.dataTransfer.files[0]) parseCSVFile(e.dataTransfer.files[0]);
     });
 
-    function csvFileChosen(input) {
-      if (input.files[0]) parseCSVFile(input.files[0]);
-    }
+    function csvFileChosen(input) { if (input.files[0]) parseCSVFile(input.files[0]); }
 
     function parseCSVFile(file) {
-      document.getElementById('csv-filename').textContent    = file.name;
-      document.getElementById('csv-editor').style.display   = 'none';
-      document.getElementById('csv-importBtn').style.display = 'none';
-      document.getElementById('csv-progress').style.display  = 'none';
+      document.getElementById('csv-filename').textContent      = file.name;
+      document.getElementById('csv-preview-info').style.display = 'none';
+      document.getElementById('csv-importBtn').style.display   = 'none';
       document.getElementById('csv-alert').className = 's-alert';
 
       const reader = new FileReader();
@@ -597,112 +680,131 @@
         const lines = ev.target.result.split(/\r?\n/).filter(l => l.trim());
         if (lines.length < 2) { showSAlert('csv-alert', 'CSV is empty or has no data rows.', 'error'); return; }
 
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+        const headers    = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
         const nameIdx    = headers.findIndex(h => h === 'name');
         const numIdx     = headers.findIndex(h => ['number','phone','mobile'].includes(h));
         const companyIdx = headers.findIndex(h => ['company','organisation','organization'].includes(h));
         const titleIdx   = headers.findIndex(h => ['jobtitle','job title','title','role'].includes(h));
+        const emailIdx   = headers.findIndex(h => h === 'email');
 
         if (nameIdx === -1) { showSAlert('csv-alert', 'No "name" column found in CSV header.', 'error'); return; }
         if (numIdx  === -1) { showSAlert('csv-alert', 'No "number", "phone" or "mobile" column found.', 'error'); return; }
 
-        const contacts = [];
+        parsedContacts = [];
         for (let i = 1; i < lines.length; i++) {
-          const cols    = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || lines[i].split(',');
-          const clean   = idx => idx >= 0 ? (cols[idx] || '').replace(/^"|"$/g, '').trim() : '';
-          const name    = clean(nameIdx);
-          const num     = clean(numIdx);
-          const company = clean(companyIdx);
-          const title   = clean(titleIdx);
-          if (name || num) contacts.push({ name, number: num, company, jobTitle: title });
+          const cols  = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || lines[i].split(',');
+          const clean = idx => idx >= 0 ? (cols[idx] || '').replace(/^"|"$/g, '').trim() : '';
+          const name  = clean(nameIdx), num = clean(numIdx);
+          if (name || num) parsedContacts.push({
+            firstName: name, lastName: '',
+            number: num, company: clean(companyIdx),
+            jobTitle: clean(titleIdx), email: clean(emailIdx),
+          });
         }
 
-        if (!contacts.length) { showSAlert('csv-alert', 'No valid rows found in CSV.', 'error'); return; }
+        if (!parsedContacts.length) { showSAlert('csv-alert', 'No valid rows found in CSV.', 'error'); return; }
 
-        renderCSVEditor(contacts);
+        const n = parsedContacts.length;
+        document.getElementById('csv-count').textContent  = `${n} contact${n !== 1 ? 's' : ''} ready`;
+        document.getElementById('csv-sample').textContent = parsedContacts.slice(0,2).map(c => c.firstName).join(', ') + (n > 2 ? ` +${n-2} more` : '');
+        document.getElementById('csv-preview-info').style.display = 'block';
+        document.getElementById('csv-importBtn').style.display    = 'block';
       };
       reader.readAsText(file);
     }
 
-    // ── Editable table ────────────────────────────────────────────────────────
+    // ── Modal open / close ────────────────────────────────────────────────────
 
-    function renderCSVEditor(contacts) {
-      const tbody = document.getElementById('csv-tbody');
-      tbody.innerHTML = '';
-      contacts.forEach((c, i) => tbody.appendChild(csvRow(c.name, '', c.number, c.company || '', c.jobTitle || '', i)));
-      updateCSVCount();
-      document.getElementById('csv-editor').style.display    = 'block';
-      document.getElementById('csv-importBtn').style.display = 'block';
-      document.getElementById('csv-progress').style.display  = 'none';
-      document.getElementById('csv-bar').style.width = '0%';
+    function openCSVModal() {
+      renderModalTable(parsedContacts);
+      document.getElementById('csvModal').classList.add('show');
+      document.getElementById('modal-alert').className = 'modal-s-alert';
+      document.getElementById('modal-progress').style.display = 'none';
+      document.getElementById('m-prog-bar').style.width = '0%';
     }
 
-    function csvRow(firstName, lastName, number, company, jobTitle, idx) {
+    function closeCSVModal() {
+      document.getElementById('csvModal').classList.remove('show');
+    }
+
+    document.getElementById('csvModal').addEventListener('click', e => {
+      if (e.target === document.getElementById('csvModal')) closeCSVModal();
+    });
+
+    // ── Modal table ───────────────────────────────────────────────────────────
+
+    function renderModalTable(contacts) {
+      const tbody = document.getElementById('modal-tbody');
+      tbody.innerHTML = '';
+      contacts.forEach((c, i) => tbody.appendChild(modalRow(c, i)));
+      updateModalCount();
+    }
+
+    function modalRow(c, i) {
       const tr = document.createElement('tr');
-      tr.className = 'csv-row';
-      tr.dataset.idx = idx;
       tr.innerHTML = `
-        <td style="padding:0"><input class="csv-input" value="${escHtml(firstName)}" placeholder="First name" /></td>
-        <td style="padding:0"><input class="csv-input" value="${escHtml(lastName)}"  placeholder="Last name" /></td>
-        <td style="padding:0"><input class="csv-input" value="${escHtml(number)}"    placeholder="Number" /></td>
-        <td style="padding:0"><input class="csv-input" value="${escHtml(company)}"   placeholder="Company" /></td>
-        <td style="padding:0"><input class="csv-input" value="${escHtml(jobTitle)}"  placeholder="Job title" /></td>
-        <td style="padding:0;text-align:center"><button class="csv-del" onclick="csvDelRow(this)" title="Delete">✕</button></td>`;
+        <td style="padding:6px 12px;color:#444;font-size:12px;text-align:center">${i + 1}</td>
+        <td style="padding:0"><input class="minput" value="${escHtml(c.firstName)}" placeholder="First name" /></td>
+        <td style="padding:0"><input class="minput" value="${escHtml(c.lastName)}"  placeholder="Last name" /></td>
+        <td style="padding:0"><input class="minput" value="${escHtml(c.number)}"    placeholder="Phone number" /></td>
+        <td style="padding:0"><input class="minput" value="${escHtml(c.company)}"   placeholder="Company" /></td>
+        <td style="padding:0"><input class="minput" value="${escHtml(c.jobTitle)}"  placeholder="Job title" /></td>
+        <td style="padding:0"><input class="minput" value="${escHtml(c.email||'')}" placeholder="Email" /></td>
+        <td style="padding:0;text-align:center"><button class="mdel" onclick="modalDelRow(this)">✕</button></td>`;
       return tr;
     }
 
-    function csvAddRow() {
-      const tbody = document.getElementById('csv-tbody');
+    function modalAddRow() {
+      const tbody = document.getElementById('modal-tbody');
       const idx   = tbody.rows.length;
-      tbody.appendChild(csvRow('', '', '', '', '', idx));
-      tbody.lastElementChild.querySelector('input').focus();
-      updateCSVCount();
+      const tr    = modalRow({ firstName:'', lastName:'', number:'', company:'', jobTitle:'', email:'' }, idx);
+      tbody.appendChild(tr);
+      tr.querySelector('input').focus();
+      updateModalCount();
     }
 
-    function csvDelRow(btn) {
+    function modalDelRow(btn) {
       btn.closest('tr').remove();
-      updateCSVCount();
-      if (!document.getElementById('csv-tbody').rows.length) {
-        document.getElementById('csv-editor').style.display    = 'none';
-        document.getElementById('csv-importBtn').style.display = 'none';
-      }
+      // Re-number
+      document.querySelectorAll('#modal-tbody tr').forEach((tr, i) => {
+        tr.cells[0].textContent = i + 1;
+      });
+      updateModalCount();
     }
 
-    function updateCSVCount() {
-      const n = document.getElementById('csv-tbody').rows.length;
-      document.getElementById('csv-count').textContent = `${n} contact${n !== 1 ? 's' : ''}`;
+    function updateModalCount() {
+      const n = document.getElementById('modal-tbody').rows.length;
+      document.getElementById('modal-count').textContent = `${n} contact${n !== 1 ? 's' : ''}`;
     }
 
-    function getEditedContacts() {
-      return Array.from(document.getElementById('csv-tbody').rows).map(tr => {
-        const inputs = tr.querySelectorAll('input');
+    function getModalContacts() {
+      return Array.from(document.getElementById('modal-tbody').rows).map(tr => {
+        const inp = tr.querySelectorAll('input');
         return {
-          firstName: inputs[0].value.trim(),
-          lastName:  inputs[1].value.trim(),
-          number:    inputs[2].value.trim(),
-          company:   inputs[3].value.trim(),
-          jobTitle:  inputs[4].value.trim(),
+          firstName: inp[0].value.trim(), lastName:  inp[1].value.trim(),
+          number:    inp[2].value.trim(), company:   inp[3].value.trim(),
+          jobTitle:  inp[4].value.trim(), email:     inp[5].value.trim(),
         };
       }).filter(c => c.firstName || c.lastName || c.number);
     }
 
-    function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+    function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
-    // ── Send to Apps Script ───────────────────────────────────────────────────
+    // ── Import from modal ─────────────────────────────────────────────────────
 
-    async function importCSV() {
-      const contacts = getEditedContacts();
-      if (!contacts.length) { showSAlert('csv-alert', 'No contacts to import.', 'error'); return; }
+    async function modalImport() {
+      const contacts = getModalContacts();
+      if (!contacts.length) { showModalAlert('No contacts to import.', 'error'); return; }
 
-      const btn = document.getElementById('csv-importBtn');
+      const btn = document.getElementById('modal-importBtn');
       btn.disabled = true; btn.textContent = 'Importing...';
-      document.getElementById('csv-progress').style.display = 'block';
-      document.getElementById('csv-alert').className = 's-alert';
+      document.getElementById('modal-progress').style.display = 'block';
+      document.getElementById('modal-alert').className = 'modal-s-alert';
 
       const total = contacts.length;
       let done = 0, failed = 0;
-
       const BATCH = 10;
+
       for (let i = 0; i < total; i += BATCH) {
         const batch = contacts.slice(i, i + BATCH);
         try {
@@ -711,18 +813,25 @@
           failed += resp.failed || 0;
         } catch { failed += batch.length; }
         const pct = Math.round(((i + batch.length) / total) * 100);
-        document.getElementById('csv-bar').style.width    = pct + '%';
-        document.getElementById('csv-status').textContent = `${Math.min(i + BATCH, total)} of ${total} processed…`;
+        document.getElementById('m-prog-bar').style.width    = pct + '%';
+        document.getElementById('m-prog-status').textContent = `${Math.min(i + BATCH, total)} of ${total} processed…`;
       }
 
-      document.getElementById('csv-status').textContent = `Done! ${done} saved${failed ? `, ${failed} failed` : ''}.`;
-      showSAlert('csv-alert', `✓ Import complete: ${done} contacts added${failed ? `, ${failed} failed` : ''}.`, 'success');
+      document.getElementById('m-prog-status').textContent = `Done! ${done} saved${failed ? `, ${failed} failed` : ''}.`;
+      showModalAlert(`✓ ${done} contact${done !== 1 ? 's' : ''} imported${failed ? `, ${failed} failed` : ''}.`, 'success');
       btn.disabled = false; btn.textContent = 'Import Contacts';
+
+      // Reset drawer
+      parsedContacts = [];
       document.getElementById('csv-file').value = '';
       document.getElementById('csv-filename').textContent = 'No file selected';
-      document.getElementById('csv-editor').style.display    = 'none';
-      document.getElementById('csv-importBtn').style.display = 'none';
-      document.getElementById('csv-tbody').innerHTML = '';
+      document.getElementById('csv-preview-info').style.display = 'none';
+      document.getElementById('csv-importBtn').style.display    = 'none';
+    }
+
+    function showModalAlert(msg, type) {
+      const el = document.getElementById('modal-alert');
+      el.textContent = msg; el.className = 'modal-s-alert ' + type;
     }
   </script>
 </body>

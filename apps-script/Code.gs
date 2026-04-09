@@ -185,7 +185,8 @@ function handleBulkContacts(data) {
       biographies: [{ value: noteContent, contentType: 'TEXT_PLAIN' }],
     };
 
-    if (c.number) body.phoneNumbers = [{ value: String(c.number).trim(), type: 'mobile' }];
+    if (c.number) body.phoneNumbers    = [{ value: String(c.number).trim(), type: 'mobile' }];
+    if (c.email)  body.emailAddresses = [{ value: String(c.email).trim(),  type: 'work'   }];
 
     // Company: row-level overrides org setting; fall back to org setting
     const company  = String(c.company  || '').trim() || organization;
