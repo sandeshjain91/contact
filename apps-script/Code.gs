@@ -188,8 +188,11 @@ function handleBulkContacts(data) {
 
     if (c.number) body.phoneNumbers = [{ value: String(c.number).trim(), type: 'mobile' }];
 
-    if (organization) {
-      body.organizations = [{ name: organization, type: 'work' }];
+    // Company: row-level overrides org setting; fall back to org setting
+    const company  = String(c.company  || '').trim() || organization;
+    const jobTitle = String(c.jobTitle || '').trim();
+    if (company || jobTitle) {
+      body.organizations = [{ name: company, title: jobTitle, type: 'work' }];
     }
 
     if (groupResourceName) {

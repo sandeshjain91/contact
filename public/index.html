@@ -291,8 +291,10 @@
             <table style="width:100%;border-collapse:collapse;" id="csv-table">
               <thead>
                 <tr style="background:#0f0f1a;position:sticky;top:0;z-index:1;">
-                  <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;width:45%">Name</th>
-                  <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;">Number</th>
+                  <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;min-width:90px">Name</th>
+                  <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;min-width:90px">Number</th>
+                  <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;min-width:80px">Company</th>
+                  <th style="padding:7px 8px;font-size:10px;color:#555;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:0.5px;min-width:80px">Job Title</th>
                   <th style="width:28px;"></th>
                 </tr>
               </thead>
@@ -595,18 +597,23 @@
         if (lines.length < 2) { showSAlert('csv-alert', 'CSV is empty or has no data rows.', 'error'); return; }
 
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
-        const nameIdx = headers.findIndex(h => h === 'name');
-        const numIdx  = headers.findIndex(h => ['number','phone','mobile'].includes(h));
+        const nameIdx    = headers.findIndex(h => h === 'name');
+        const numIdx     = headers.findIndex(h => ['number','phone','mobile'].includes(h));
+        const companyIdx = headers.findIndex(h => ['company','organisation','organization'].includes(h));
+        const titleIdx   = headers.findIndex(h => ['jobtitle','job title','title','role'].includes(h));
 
         if (nameIdx === -1) { showSAlert('csv-alert', 'No "name" column found in CSV header.', 'error'); return; }
         if (numIdx  === -1) { showSAlert('csv-alert', 'No "number", "phone" or "mobile" column found.', 'error'); return; }
 
         const contacts = [];
         for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || lines[i].split(',');
-          const name = (cols[nameIdx] || '').replace(/^"|"$/g, '').trim();
-          const num  = (cols[numIdx]  || '').replace(/^"|"$/g, '').trim();
-          if (name || num) contacts.push({ name, number: num });
+          const cols    = lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || lines[i].split(',');
+          const clean   = idx => idx >= 0 ? (cols[idx] || '').replace(/^"|"$/g, '').trim() : '';
+          const name    = clean(nameIdx);
+          const num     = clean(numIdx);
+          const company = clean(companyIdx);
+          const title   = clean(titleIdx);
+          if (name || num) contacts.push({ name, number: num, company, jobTitle: title });
         }
 
         if (!contacts.length) { showSAlert('csv-alert', 'No valid rows found in CSV.', 'error'); return; }
@@ -621,7 +628,7 @@
     function renderCSVEditor(contacts) {
       const tbody = document.getElementById('csv-tbody');
       tbody.innerHTML = '';
-      contacts.forEach((c, i) => tbody.appendChild(csvRow(c.name, c.number, i)));
+      contacts.forEach((c, i) => tbody.appendChild(csvRow(c.name, c.number, c.company || '', c.jobTitle || '', i)));
       updateCSVCount();
       document.getElementById('csv-editor').style.display    = 'block';
       document.getElementById('csv-importBtn').style.display = 'block';
@@ -629,13 +636,15 @@
       document.getElementById('csv-bar').style.width = '0%';
     }
 
-    function csvRow(name, number, idx) {
+    function csvRow(name, number, company, jobTitle, idx) {
       const tr = document.createElement('tr');
       tr.className = 'csv-row';
       tr.dataset.idx = idx;
       tr.innerHTML = `
-        <td style="padding:0"><input class="csv-input" value="${escHtml(name)}" placeholder="Name" /></td>
-        <td style="padding:0"><input class="csv-input" value="${escHtml(number)}" placeholder="Number" /></td>
+        <td style="padding:0"><input class="csv-input" value="${escHtml(name)}"     placeholder="Name" /></td>
+        <td style="padding:0"><input class="csv-input" value="${escHtml(number)}"   placeholder="Number" /></td>
+        <td style="padding:0"><input class="csv-input" value="${escHtml(company)}"  placeholder="Company" /></td>
+        <td style="padding:0"><input class="csv-input" value="${escHtml(jobTitle)}" placeholder="Job title" /></td>
         <td style="padding:0;text-align:center"><button class="csv-del" onclick="csvDelRow(this)" title="Delete">✕</button></td>`;
       return tr;
     }
@@ -643,7 +652,7 @@
     function csvAddRow() {
       const tbody = document.getElementById('csv-tbody');
       const idx   = tbody.rows.length;
-      tbody.appendChild(csvRow('', '', idx));
+      tbody.appendChild(csvRow('', '', '', '', idx));
       tbody.lastElementChild.querySelector('input').focus();
       updateCSVCount();
     }
@@ -665,7 +674,12 @@
     function getEditedContacts() {
       return Array.from(document.getElementById('csv-tbody').rows).map(tr => {
         const inputs = tr.querySelectorAll('input');
-        return { name: inputs[0].value.trim(), number: inputs[1].value.trim() };
+        return {
+          name:     inputs[0].value.trim(),
+          number:   inputs[1].value.trim(),
+          company:  inputs[2].value.trim(),
+          jobTitle: inputs[3].value.trim(),
+        };
       }).filter(c => c.name || c.number);
     }
 
