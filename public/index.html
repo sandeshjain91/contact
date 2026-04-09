@@ -251,7 +251,7 @@
 
         <!-- CSV Upload -->
         <div class="s-section">Import from CSV</div>
-        <p style="color:#555;font-size:12px;margin-bottom:12px;">CSV must have <strong style="color:#888">name</strong> and <strong style="color:#888">number</strong> columns. First row = header.</p>
+        <p style="color:#555;font-size:12px;margin-bottom:12px;">CSV must have <strong style="color:#888">name</strong> and <strong style="color:#888">number / phone / mobile</strong> columns. First row = header.</p>
 
         <label id="csv-drop" style="
           display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
@@ -568,10 +568,10 @@
 
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
         const nameIdx = headers.findIndex(h => h === 'name');
-        const numIdx  = headers.findIndex(h => h === 'number' || h === 'phone');
+        const numIdx  = headers.findIndex(h => h === 'number' || h === 'phone' || h === 'mobile');
 
         if (nameIdx === -1) { showSAlert('csv-alert', 'No "name" column found in CSV header.', 'error'); return; }
-        if (numIdx  === -1) { showSAlert('csv-alert', 'No "number" or "phone" column found in CSV header.', 'error'); return; }
+        if (numIdx  === -1) { showSAlert('csv-alert', 'No "number", "phone" or "mobile" column found in CSV header.', 'error'); return; }
 
         csvContacts = [];
         for (let i = 1; i < lines.length; i++) {
