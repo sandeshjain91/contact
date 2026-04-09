@@ -175,9 +175,8 @@ function handleBulkContacts(data) {
   let saved = 0, failed = 0;
 
   contacts.forEach(c => {
-    const nameParts = String(c.name || '').trim().split(/\s+/);
-    const firstName = nameParts[0] || '';
-    const lastName  = nameParts.slice(1).join(' ') || '';
+    const firstName = String(c.name || '').trim();
+    const lastName  = '';
 
     if (!firstName && !lastName && !c.number) { failed++; return; }
 
